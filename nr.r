@@ -88,37 +88,39 @@ log_likelihood = function(X,Y,coeff) {
 	return (result)
 }
 
-Fisher_scoring = function(X,Y) {
+glm = function(X,Y,max_iter=10000,stop_cond="norm",fisher=TRUE) {
+	# max_iter:		maximum number of iterations
+	# stop_cond:	stopping condition. "norm" stands for difference in norm of coefficient.
+	#				"likelihood" stands for difference in average log-likelihood
+	# fisher:		if set TRUE, use Fisher scoring. if set FALSE, use regular Newton-Raphson
+
 	coeff = matrix(0, nrow=ncol(X), ncol=1)
 
-	for (i in 1:10) {
-		print(paste("=========================Fisher Scoring ITERATION ", i , "======================================="))
-		coeff = coeff - solve(Hessian_first(X,Y,coeff)) %*% gradient(X,Y,coeff)
-		print("coef after iteration")
-		print(coeff)
-		print("log-likelikhood after iteration")
-		print(log_likelihood(X,Y,coeff))
+	average_log_likelihood = avg_log_likelihood(X,Y,coeff)
+
+	for (i in 1:max_iter) {
+
+		if (fisher == TRUE) {
+			current_coeff = coeff - solve(Hessian_first(X,Y,coeff)) %*% gradient(X,Y,coeff)
+		} else if (fisher == FALSE) {
+			current_coeff = coeff - solve(Hessian_first(X,Y,coeff)+Hessian_second(X,Y,coeff)) %*% gradient(X,Y,coeff)
+		}
+
+		if ((stop_cond == "norm") & (sqrt(rowSums(t(current_coeff-coeff) %*% (current_coeff-coeff))) <= 0.00001)) {
+			break
+		} else if ((stop_cond == "likelihood") & (abs(avg_log_likelihood(X,Y,current_coeff) - average_log_likelihood) <= 0.00001)) {
+			break
+		} else {
+			coeff = current_coeff
+			average_log_likelihood = avg_log_likelihood(X,Y,coeff)
+		}
+
 	}
 
-	return (coeff)
+	return (current_coeff)
 }
 
-Newton_rapshon = function(X,Y) {
-	coeff = matrix(0, nrow=ncol(X), ncol=1)
-
-	for (i in 1:10) {
-		print(paste("=========================Newton Rapshon ITERATION ", i , "======================================="))
-		coeff = coeff - solve(Hessian_first(X,Y,coeff)+Hessian_second(X,Y,coeff)) %*% gradient(X,Y,coeff)
-		print("coef after iteration")
-		print(coeff)
-		print("log-likelikhood after iteration")
-		print(log_likelihood(X,Y,coeff))
-	}
-
-	return (coeff)
-}
-
-Fisher_scoring(X,Y)
-Newton_rapshon(X,Y)
+print(glm(X,Y,stop_cond="likelihood",fisher=TRUE))
+print(glm(X,Y,stop_cond="norm",fisher=TRUE))
 
 rm(list = ls())
