@@ -79,13 +79,17 @@ log_likelihood = function(X,Y,coeff) {
 	result = 0
 
 	for (i in 1:nrow(X)) {
-		first_const = as.numeric(Y[i,1,drop=FALSE]) * log(mu(X[i,,drop=FALSE], coeff)/(1 - mu(X[i,,drop=FALSE], coeff)))
-		second_const = log(1 - mu(X[i,,drop=FALSE], coeff))
+		first_const = as.numeric(Y[i,1,drop=FALSE]) * log(mu(eta(X[i,,drop=FALSE], coeff))/(1 - mu(eta(X[i,,drop=FALSE], coeff))))
+		second_const = log(1 - mu(eta(X[i,,drop=FALSE], coeff)))
 
 		result = result + first_const + second_const
 	}
 
 	return (result)
+}
+
+avg_log_likelihood = function(X,Y,coeff) {
+	return (log_likelihood(X,Y,coeff)/nrow(X))
 }
 
 glm = function(X,Y,max_iter=10000,stop_cond="norm",fisher=TRUE) {
@@ -117,10 +121,35 @@ glm = function(X,Y,max_iter=10000,stop_cond="norm",fisher=TRUE) {
 
 	}
 
+	# calculate residual deviance
+	residual_deviance = 0
+	for (i in 1:nrow(X)) {
+		residual_deviance = residual_deviance + (Y[i,1] * log(mu(eta(X[i,,drop=FALSE], coeff))/(1 -mu(eta(X[i,,drop=FALSE], coeff)))) + log(1-mu(eta(X[i,,drop=FALSE], coeff))))
+	}
+	residual_deviance = (-2)*residual_deviance
+	print(paste("Residual Deviance: ", residual_deviance, sep=""))
+
+	# calculate null deviance
+	deviance_of_null_model = 0
+	for (i in 1:nrow(X)) {
+		deviance_of_null_model = deviance_of_null_model + (Y[i] * log(mean(Y)/(1-mean(Y))) - log(1 - mean(Y)))
+	}
+
+	deviance_of_current_model = 0
+	for (i in 1:nrow(X)) {
+		deviance_of_current_model = deviance_of_current_model + (Y[i,1] * log(mu(eta(X[i,,drop=FALSE], coeff))/(1 -mu(eta(X[i,,drop=FALSE], coeff)))) + log(1-mu(eta(X[i,,drop=FALSE], coeff))))
+	}
+
+	null_deviance = 2*(deviance_of_null_model - deviance_of_current_model)
+	print(paste("Null Deviance ", null_deviance))
+
+	# return estimated coefficients
 	return (current_coeff)
 }
 
+
 print(glm(X,Y,stop_cond="likelihood",fisher=TRUE))
 print(glm(X,Y,stop_cond="norm",fisher=TRUE))
+
 
 rm(list = ls())
