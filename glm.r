@@ -99,8 +99,23 @@ glm = function(X,Y,max_iter=10000,stop_cond="norm",fisher=TRUE) {
 	# fisher:		if set TRUE, use Fisher scoring. if set FALSE, use regular Newton-Raphson
 
 	coeff = matrix(0, nrow=ncol(X), ncol=1)
-
 	average_log_likelihood = avg_log_likelihood(X,Y,coeff)
+	counter = 0
+
+	print(paste("Number of observations:", nrow(X)))
+	print(paste("Number of covariates:", ncol(X)))
+
+	if (fisher == TRUE) {
+		print("Using Fisher scoring")
+	} else {
+		print("Using regular Newton-Raphson")
+	}
+
+	if (stop_cond == "norm") {
+		print("Stopping condition: difference in consecutive norm of coefficient")
+	} else if (stop_cond == "likelihood") {
+		print("Stopping condition: difference in consecutive average log-likelihood")
+	}
 
 	for (i in 1:max_iter) {
 
@@ -119,7 +134,12 @@ glm = function(X,Y,max_iter=10000,stop_cond="norm",fisher=TRUE) {
 			average_log_likelihood = avg_log_likelihood(X,Y,coeff)
 		}
 
+		counter = counter + 1
 	}
+
+	print(paste("Total number of iterations:", counter))
+	print("Point Estimation:")
+	print(coeff)
 
 	# calculate residual deviance
 	residual_deviance = 0
@@ -127,7 +147,7 @@ glm = function(X,Y,max_iter=10000,stop_cond="norm",fisher=TRUE) {
 		residual_deviance = residual_deviance + (Y[i,1] * log(mu(eta(X[i,,drop=FALSE], coeff))/(1 -mu(eta(X[i,,drop=FALSE], coeff)))) + log(1-mu(eta(X[i,,drop=FALSE], coeff))))
 	}
 	residual_deviance = (-2)*residual_deviance
-	print(paste("Residual Deviance: ", residual_deviance, sep=""))
+	print(paste("Residual Deviance:", residual_deviance, sep=""))
 
 	# calculate null deviance
 	deviance_of_null_model = 0
@@ -141,15 +161,21 @@ glm = function(X,Y,max_iter=10000,stop_cond="norm",fisher=TRUE) {
 	}
 
 	null_deviance = 2*(deviance_of_null_model - deviance_of_current_model)
-	print(paste("Null Deviance ", null_deviance))
+	print(paste("Null Deviance:", null_deviance))
+
+	print("Standard Errors:")
+	print(sqrt(diag((-1)*solve(Hessian_first(X,Y,current_coeff)+Hessian_second(X,Y,current_coeff)))))
 
 	# return estimated coefficients
 	return (current_coeff)
 }
 
 
-print(glm(X,Y,stop_cond="likelihood",fisher=TRUE))
-print(glm(X,Y,stop_cond="norm",fisher=TRUE))
+glm(X,Y,stop_cond="likelihood",fisher=TRUE)
+# glm(X,Y,stop_cond="norm",fisher=TRUE)
+
+# glm(X,Y,stop_cond="likelihood",fisher=FALSE)
+# glm(X,Y,stop_cond="norm",fisher=FALSE)
 
 
 rm(list = ls())
