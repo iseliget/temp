@@ -92,13 +92,20 @@ avg_log_likelihood = function(X,Y,coeff) {
 	return (log_likelihood(X,Y,coeff)/nrow(X))
 }
 
-glm = function(X,Y,max_iter=10000,stop_cond="norm",fisher=TRUE) {
+glm_probit = function(X,Y,max_iter=10000,init="zero",stop_cond="norm",fisher=TRUE) {
 	# max_iter:		maximum number of iterations
 	# stop_cond:	stopping condition. "norm" stands for difference in norm of coefficient.
 	#				"likelihood" stands for difference in average log-likelihood
 	# fisher:		if set TRUE, use Fisher scoring. if set FALSE, use regular Newton-Raphson
 
 	coeff = matrix(0, nrow=ncol(X), ncol=1)
+	if (init == "zero") {
+		print("Initiall coefficients set to zeros")
+	} else if (init == "ols") {
+		ols_model = lm(Y~X+0)
+		coeff = as.matrix(ols_model$coefficients)
+		print("Initiall coefficients set to be OLS estimate")
+	}
 	average_log_likelihood = avg_log_likelihood(X,Y,coeff)
 	counter = 0
 
@@ -169,13 +176,3 @@ glm = function(X,Y,max_iter=10000,stop_cond="norm",fisher=TRUE) {
 	# return estimated coefficients
 	return (current_coeff)
 }
-
-
-glm(X,Y,stop_cond="likelihood",fisher=TRUE)
-# glm(X,Y,stop_cond="norm",fisher=TRUE)
-
-# glm(X,Y,stop_cond="likelihood",fisher=FALSE)
-# glm(X,Y,stop_cond="norm",fisher=FALSE)
-
-
-rm(list = ls())
