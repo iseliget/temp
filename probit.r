@@ -127,7 +127,15 @@ glm_probit = function(X,Y,max_iter=10000,init="zero",stop_cond="norm",fisher=TRU
 	for (i in 1:max_iter) {
 
 		if (fisher == TRUE) {
-			current_coeff = coeff - solve(Hessian_first(X,Y,coeff)) %*% gradient(X,Y,coeff)
+			for (lambda in seq(1,0.1,-0.1)) {
+				current_coeff = coeff - lambda * (solve(Hessian_first(X,Y,coeff)) %*% gradient(X,Y,coeff))
+				if (avg_log_likelihood(X,Y,current_coeff) - avg_log_likelihood(X,Y,coeff) > 0) {
+					break
+				} else {
+					print("back-track!")
+				}
+
+			}
 		} else if (fisher == FALSE) {
 			current_coeff = coeff - solve(Hessian_first(X,Y,coeff)+Hessian_second(X,Y,coeff)) %*% gradient(X,Y,coeff)
 		}
@@ -176,3 +184,15 @@ glm_probit = function(X,Y,max_iter=10000,init="zero",stop_cond="norm",fisher=TRU
 	# return estimated coefficients
 	return (current_coeff)
 }
+
+
+glm_probit(X,Y,init="ols",stop_cond="norm",fisher=FALSE)
+glm_probit(X,Y,init="ols",stop_cond="norm",fisher=TRUE)
+glm_probit(X,Y,init="ols",stop_cond="likelihood",fisher=FALSE)
+glm_probit(X,Y,init="ols",stop_cond="likelihood",fisher=TRUE)
+glm_probit(X,Y,init="zero",stop_cond="norm",fisher=FALSE)
+glm_probit(X,Y,init="zero",stop_cond="norm",fisher=TRUE)
+glm_probit(X,Y,init="zero",stop_cond="likelihood",fisher=FALSE)
+glm_probit(X,Y,init="zero",stop_cond="likelihood",fisher=TRUE)
+
+rm(list = ls())
