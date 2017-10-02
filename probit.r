@@ -132,12 +132,20 @@ glm_probit = function(X,Y,max_iter=10000,init="zero",stop_cond="norm",fisher=TRU
 				if (avg_log_likelihood(X,Y,current_coeff) - avg_log_likelihood(X,Y,coeff) > 0) {
 					break
 				} else {
-					print("back-track!")
+					print(paste("back-track, ready to try",lambda))
 				}
 
 			}
 		} else if (fisher == FALSE) {
-			current_coeff = coeff - solve(Hessian_first(X,Y,coeff)+Hessian_second(X,Y,coeff)) %*% gradient(X,Y,coeff)
+			for (lambda in seq(1,0.1,-0.1)) {
+				current_coeff = coeff - lambda * (solve(Hessian_first(X,Y,coeff)) %*% gradient(X,Y,coeff))
+				if (avg_log_likelihood(X,Y,current_coeff) - avg_log_likelihood(X,Y,coeff) > 0) {
+					break
+				} else {
+					print(paste("back-track, ready to try",lambda))
+				}
+
+			}
 		}
 
 		if ((stop_cond == "norm") & (sqrt(rowSums(t(current_coeff-coeff) %*% (current_coeff-coeff))) <= 0.00001)) {
@@ -167,19 +175,21 @@ glm_probit = function(X,Y,max_iter=10000,init="zero",stop_cond="norm",fisher=TRU
 	# calculate null deviance
 	deviance_of_null_model = 0
 	for (i in 1:nrow(X)) {
-		deviance_of_null_model = deviance_of_null_model + (Y[i] * log(mean(Y)/(1-mean(Y))) - log(1 - mean(Y)))
+		deviance_of_null_model = deviance_of_null_model + (Y[i] * log(mean(Y)/(1-mean(Y))) + log(1 - mean(Y)))
 	}
 
 	deviance_of_current_model = 0
 	for (i in 1:nrow(X)) {
 		deviance_of_current_model = deviance_of_current_model + (Y[i,1] * log(mu(eta(X[i,,drop=FALSE], coeff))/(1 -mu(eta(X[i,,drop=FALSE], coeff)))) + log(1-mu(eta(X[i,,drop=FALSE], coeff))))
+		
 	}
 
-	null_deviance = 2*(deviance_of_null_model - deviance_of_current_model)
+	null_deviance = (-2)*deviance_of_null_model
 	print(paste("Null Deviance:", null_deviance))
 
 	print("Standard Errors:")
 	print(sqrt(diag((-1)*solve(Hessian_first(X,Y,current_coeff)+Hessian_second(X,Y,current_coeff)))))
+	cat("\n")
 
 	# return estimated coefficients
 	return (current_coeff)
@@ -187,12 +197,12 @@ glm_probit = function(X,Y,max_iter=10000,init="zero",stop_cond="norm",fisher=TRU
 
 
 glm_probit(X,Y,init="ols",stop_cond="norm",fisher=FALSE)
-glm_probit(X,Y,init="ols",stop_cond="norm",fisher=TRUE)
-glm_probit(X,Y,init="ols",stop_cond="likelihood",fisher=FALSE)
-glm_probit(X,Y,init="ols",stop_cond="likelihood",fisher=TRUE)
-glm_probit(X,Y,init="zero",stop_cond="norm",fisher=FALSE)
-glm_probit(X,Y,init="zero",stop_cond="norm",fisher=TRUE)
-glm_probit(X,Y,init="zero",stop_cond="likelihood",fisher=FALSE)
-glm_probit(X,Y,init="zero",stop_cond="likelihood",fisher=TRUE)
+# glm_probit(X,Y,init="ols",stop_cond="norm",fisher=TRUE)
+# glm_probit(X,Y,init="ols",stop_cond="likelihood",fisher=FALSE)
+# glm_probit(X,Y,init="ols",stop_cond="likelihood",fisher=TRUE)
+# glm_probit(X,Y,init="zero",stop_cond="norm",fisher=FALSE)
+# glm_probit(X,Y,init="zero",stop_cond="norm",fisher=TRUE)
+# glm_probit(X,Y,init="zero",stop_cond="likelihood",fisher=FALSE)
+# glm_probit(X,Y,init="zero",stop_cond="likelihood",fisher=TRUE)
 
 rm(list = ls())
