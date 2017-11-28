@@ -1,0 +1,60 @@
+library(MASS)
+
+log_likelihood = function(sigma_e,sigma_u) {
+	# probably not a very extendable function
+	# sigma_e will be under Random effects - Residual
+	# sigma_u will be under Random effects - (Intercepts)
+
+	# b_hat is given
+	b_0 = 19.022491
+	b_1 = 0.157497
+
+	group_label = unique(petrol$No)
+
+	num_of_measurements = c() #(n_1,\cdots,n_m)
+	for (label in group_label) {
+		num_of_measurements = c(num_of_measurements, length(which(petrol$No == label)))
+	}
+
+	N = sum(num_of_measurements)
+
+	first_term = N * log(2*pi)
+
+	second_term = 0
+	for (j in 1:length(num_of_measurements)) {
+		second_term = second_term + log(sigma_e^2 + num_of_measurements[j] * sigma_u^2)
+	}
+
+	third_term = 0
+	for (j in 1:length(num_of_measurements)) {
+		third_term = third_term + 2*(num_of_measurements[j] - 1)*log(sigma_e)
+	}
+
+	fourth_term = 0
+	for (j in 1:length(num_of_measurements)) {
+		y_j = petrol[petrol$No == group_label[j], "Y"] # Y of j-th group
+		x_j = petrol[petrol$No == group_label[j], "EP"] # EP of j-th group
+		e_j = y_j - b_1*x_j  - b_0
+
+		w_i = mean(e_j*e_j) - (mean(e_j))^2
+
+		fourth_term = fourth_term + (num_of_measurements[j]*w_i/sigma_e^2) + (num_of_measurements[j]/(sigma_e^2 + num_of_measurements[j]*sigma_u^2))*(mean(e_j))^2
+	}
+
+	result = (-1/2) * (first_term + second_term + third_term + fourth_term)
+
+	return (result)
+}
+
+# generate contour
+
+x = seq(1,2,0.05) # this will be sigma_u
+y = seq(6.5,8.5,0.05) 
+z = c()
+for (i in x) {
+	for (j in y) {
+		z = c(z,log_likelihood(i,j))
+	}
+}
+z = matrix(z,nrow=length(x),ncol=(length(y)))
+contour(x,y,z,nlevels=25)
